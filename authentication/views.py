@@ -30,29 +30,28 @@ class SendOTPThread:
         set_signal = ''
         set_count_signal = ''
         data = request.data
-        if type(data['mobileNo']) == int:
-            checkNo = OtpVerify.objects.filter(mobileNo = data['mobileNo'], isVerify = True).exists()
-            if checkNo:
-                self.context = {'status' : status.HTTP_208_ALREADY_REPORTED, 'details' : 'You allready Message Verify please you should go register or login'}
-                set_signal = False
+        checkNo = OtpVerify.objects.filter(mobileNo = data['mobileNo'], isVerify = True).exists()
+        if checkNo:
+            self.context = {'status' : status.HTTP_208_ALREADY_REPORTED, 'details' : 'You allready Message Verify please you should go register or login'}
+            set_signal = False
+            return
 
-            obj_time_count = OtpVerify.objects.filter(mobileNo = data['mobileNo'], maxTry = 3)
+        obj_time_count = OtpVerify.objects.filter(mobileNo = data['mobileNo'], maxTry = 3)
+        if obj_time_count:
+            time_threshold = datetime.now() - timedelta(minutes=24)
+            obj_time_count = OtpVerify.objects.filter(mobileNo = data['mobileNo'], maxTry = 3, createAt__lt = time_threshold)
             if obj_time_count:
-                time_threshold = datetime.now() - timedelta(minutes=24)
-                obj_time_count = OtpVerify.objects.filter(mobileNo = data['mobileNo'], maxTry = 3, createAt__lt = time_threshold)
-                if obj_time_count:
-                    set_signal = True
-                    set_count_signal = True
-                else:
-                    self.context = {'status' : status.HTTP_304_NOT_MODIFIED, 'details' : 'You not resent otp until 24 hourse'} 
-                    set_signal = False
-            else:
                 set_signal = True
+                set_count_signal = True
+                return
+            else:
+                self.context = {'status' : status.HTTP_304_NOT_MODIFIED, 'details' : 'You not resent otp until 24 hourse'} 
+                set_signal = False
+                return
         else:
-             self.context = {
-                 'status' : status.HTTP_203_NON_AUTHORITATIVE_INFORMATION, 
-                 'details' : 'You not fill right data'
-                }
+            set_signal = True
+        
+        set_signal = True
 
         if set_signal == True:
             otp = comman_function.otp_generate()
@@ -78,7 +77,8 @@ class SendOTPThread:
                 )
             context = {
                 'status' : status.HTTP_202_ACCEPTED, 
-                'mobileNo' : data['mobileNo']
+                'mobileNo' : data['mobileNo'],
+                'details' : f"Your otp successfully sent this {data['mobileNo']} mobile No."
                 }
             set_signal = True
             self.context = context
@@ -133,14 +133,19 @@ class RegisterUserAuth:
         else:
             try:    
                 user = User.objects.create(
-                    first_name= data['first_name'],
-                    last_name=data['last_name'],
+                    first_name= data['firstName'],
+                    last_name=data['lastName'],
                     username=data['email'],
                     email=data['email'],
                     password=make_password(data['password'])
                 )
-                self.context = UserSerializerWithToken(user, many=False).data
-                signals.user_profile_data.send(sender=None, request=request, user=self.context['id'])
+                serializer = UserSerializerWithToken(user, many=False)
+                self.context = {
+                    'status' : status.HTTP_202_ACCEPTED, 
+                    'details' : 'Successfully ragistrations',
+                    'data' : serializer.data
+                }
+                signals.user_profile_data.send(sender=None, request=request, user=self.context['data']['id'])
                 return
             except:
                 self.context = {'status' : status.HTTP_208_ALREADY_REPORTED, 'details' : 'Please make strong password'}
@@ -163,11 +168,11 @@ class UserDataUpdate:
             return
         else:
             User.objects.filter(id = pk).update(
-                first_name= data['first_name'],
-                last_name=data['last_name'],
+                first_name= data['firstName'],
+                last_name=data['lastName'],
                 username=data['email'],
                 email=data['email'],
-                # profileImage = f"profile-images/{file['profileImage']}",
+                profileImage = f"profile-images/{file['profileImage']}",
             )
             self.context = {'status' : status.HTTP_202_ACCEPTED, "details" : "User details successfully changed"}
             return       
@@ -217,16 +222,16 @@ class GetUserProfile:
         return
     
                  
-# {
-# "first_name" : "vishesh",
-# "last_name" : "solanki",
-# "email" : "visheshsolanki1234@gmail.com",
-# "password" : "vishesh@123",
-# "mobileNo" : 8878401574,
-# "iAm" : "Doctore",
-# "speciality" : "eye",
-# "clinicName" : "Zetamonk"
-# }
+{
+"first_name" : "vishesh",
+"last_name" : "solanki",
+"email" : "visheshsolanki1234@gmail.com",
+"password" : "vishesh@123",
+"mobileNo" : 8878401574,
+"iAm" : "Doctore",
+"speciality" : "eye",
+"clinicName" : "Zetamonk"
+}
 
 # {
 # "first_name" : "vishesh",
@@ -244,6 +249,7 @@ def send_otp(request):
     
     context_data = class_obj.context
     status = class_obj.context['status']
+    
     if status == 202:
         return Response(context_data)
     return Response(context_data)

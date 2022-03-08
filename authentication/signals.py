@@ -18,7 +18,7 @@ def save_profile(sender, request, **kwargs):
         iAm = data['iAm'],
         speciality = data['speciality'],
         clinicName = data['clinicName'],
-        profileImage = file['profileImage'],
+        # profileImage = file['profileImage'],
     )
     return
 

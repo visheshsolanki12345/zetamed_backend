@@ -18,3 +18,19 @@ class PatientDetails(models.Model):
     patientImage = models.ImageField(upload_to = 'patient-images', null=True, blank=True)
     createAt = models.DateTimeField(auto_now_add=True)
 
+class IsStaffCategory(models.Model):
+    user = models.ManyToManyField(User)
+    isStaff = models.CharField(null=True, blank=True, max_length=500)
+    def get_users(self):
+        return ",".join([str(p) for p in self.user.all()])
+
+    def __unicode__(self):
+        return "{0}".format(self.user)
+
+# class StaffDetails(models.Model):
+#     user = models.ManyToManyField(User)
+#     name = models.CharField(null=True, blank=True, max_length=500)
+#     degree = models.CharField(null=True, blank=True, max_length=500)
+#     mobile = models.CharField(null=True, blank=True, max_length=500)
+#     email = models.CharField(null=True, blank=True, max_length=500)
+#     email = models.CharField(null=True, blank=True, max_length=500)
