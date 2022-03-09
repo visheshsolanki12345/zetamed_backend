@@ -18,6 +18,7 @@ class AllPatientGetData:
     def all_data_thread(self, request):
         obj = PatientDetails.objects.filter(user = request.user)
         serializer = PatientDetailsSerializer(obj, many=True)
+        print(serializer.data)
         self.context = {'status' : status.HTTP_202_ACCEPTED, 'data' : serializer.data}
         return
     

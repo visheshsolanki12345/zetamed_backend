@@ -27,12 +27,14 @@ class UserSerializerWithToken(UserSerializer):
         model = User
         fields = ['id', 'username', 'email', 'first_name','last_name', 'isAdmin', 'token', 'access']
 
+
 class ProfileSerializer(serializers.ModelSerializer):
+    createdAt = serializers.DateTimeField(format = "%B %d, %Y, %I:%M%p")
     class Meta:
         model = Profile
         fields = [
-        'id', 'user', 'mobileNo', 'iAm', 'speciality', 'clinicName', 
-        'profileImage', 'createdAt',
+        'id', 'mobileNo', 'iAm', 'speciality', 'clinicName', 
+        'profileImage', 'createdAt'
         ]
 
     

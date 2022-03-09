@@ -1,4 +1,5 @@
 from distutils.command.upload import upload
+from email.policy import default
 from django.db import models
 from django.contrib.auth.models import User
 import os
@@ -30,6 +31,9 @@ class Profile(models.Model):
     iAm = models.CharField(null=True, blank=True, max_length=500)
     speciality = models.CharField(null=True, blank=True, max_length=500)
     clinicName = models.CharField(null=True, blank=True, max_length=500)
-    profileImage = models.ImageField(upload_to = 'profile-images', null=True, blank=True)
+    profileImage = models.ImageField(null=True, blank=True,upload_to='profile-images')
     createdAt = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return str(self.user)
+
 
