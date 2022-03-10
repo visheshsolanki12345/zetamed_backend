@@ -32,16 +32,20 @@ class SendOTPThread:
         set_signal = ''
         set_count_signal = ''
         data = request.data
-        checkNo = OtpVerify.objects.filter(mobileNo = data['mobileNo'], isVerify = True).exists()
+        checkNo = OtpVerify.objects.filter(mobileNo = data['mobileNo'], email = data['email'], isVerify = True).exists()
         if checkNo:
             self.context = {'status' : status.HTTP_208_ALREADY_REPORTED, 'details' : 'You allready Message Verify please you should go register or login'}
             set_signal = False
             return
+        email_check = comman_function.email_check_validation(data['email'])
+        if email_check == False:
+            self.context = {'status' : status.HTTP_400_BAD_REQUEST, 'details' : 'Please fill proper email'}
+            return
 
-        obj_time_count = OtpVerify.objects.filter(mobileNo = data['mobileNo'], maxTry = 3)
+        obj_time_count = OtpVerify.objects.filter(mobileNo = data['mobileNo'], maxTry = 3, email = data['email'])
         if obj_time_count:
             time_threshold = datetime.now() - timedelta(minutes=24)
-            obj_time_count = OtpVerify.objects.filter(mobileNo = data['mobileNo'], maxTry = 3, createAt__lt = time_threshold)
+            obj_time_count = OtpVerify.objects.filter(mobileNo = data['mobileNo'], maxTry = 3, createAt__lt = time_threshold, email = data['email'])
             if obj_time_count:
                 set_signal = True
                 set_count_signal = True
@@ -59,10 +63,11 @@ class SendOTPThread:
             otp = comman_function.otp_generate()
             msg = f"Hello There this is your OTP {otp}"
             msg_status, msg_id = comman_function.otp_request_twillo(data['mobileNo'], msg)
-            check_update = OtpVerify.objects.filter(mobileNo = data['mobileNo']).exists()
+            check_update = OtpVerify.objects.filter(mobileNo = data['mobileNo'], email = data['email']).exists()
             if check_update:
                 obj_count = OtpVerify.objects.get(
-                    mobileNo = data['mobileNo']
+                    mobileNo = data['mobileNo'],
+                    email = data['email'],
                 )
                 if set_count_signal:
                     obj_count.maxTry = 1
@@ -73,6 +78,7 @@ class SendOTPThread:
             else:
                 OtpVerify.objects.create(
                     mobileNo = data['mobileNo'],
+                    email = data['email'],
                     isOtp = otp,
                     msgStatus = msg_status,
                     msgId = msg_id,
@@ -94,10 +100,10 @@ class MsgOtpVerify:
     
     def otp_verify_thread(self, request):
         data = request.data
-        obj_find = OtpVerify.objects.filter(mobileNo = data['mobileNo'])
+        obj_find = OtpVerify.objects.filter(mobileNo = data['mobileNo'], email = data['email'])
         if obj_find:
             time_threshold = datetime.now() - timedelta(minutes=10)
-            obj_time_count = OtpVerify.objects.filter(mobileNo = data['mobileNo'], createAt__gt = time_threshold)
+            obj_time_count = OtpVerify.objects.filter(mobileNo = data['mobileNo'], email = data['email'], createAt__gt = time_threshold)
             if obj_time_count:
                 for i in obj_time_count:
                     if data['isOtp'] == i.isOtp:

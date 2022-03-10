@@ -6,7 +6,7 @@ from .models import OtpVerify, Profile
 class OtpVerifyAdmin(admin.ModelAdmin): 
     list_display = [
         'id', 'mobileNo', 'isOtp', 'msgStatus', 'msgId', 'isVerify', 
-        'maxTry', 'isBlockNumber', 'createAt'
+        'maxTry', 'email', 'createAt'
         ]
 
 @admin.register(Profile)
