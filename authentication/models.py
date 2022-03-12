@@ -17,7 +17,7 @@ class OtpVerify(models.Model):
 
 class Profile(models.Model):
     id = models.UUIDField(primary_key = True,default = uuid.uuid4, editable = False)
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True)
     mobileNo = models.IntegerField(null=False, blank=False)
     iAm = models.CharField(null=True, blank=True, max_length=500)
     speciality = models.CharField(null=True, blank=True, max_length=500)

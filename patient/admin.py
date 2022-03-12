@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import (
-    PatientDetails, IsStaffCategory, PatientByUser
+    PatientDetails, IsStaffCategory, PatientByUser, PatientGroup,
+    PatientGroupByUser, 
 )
 # Register your models here.
 
@@ -12,13 +13,21 @@ class PatientDetailsAdmin(admin.ModelAdmin):
         'patientImage', 'createAt'
     ]
 
-@admin.register(IsStaffCategory)
-class IsStaffCategoryAdmin(admin.ModelAdmin):
-    list_display = ['id', 'get_users', 'isStaff']
+@admin.register(PatientGroup)
+class PatientGroupAdmin(admin.ModelAdmin):
+    list_display = ['id', 'disease', 'diseaseDiscription', 'createAt']
+
+@admin.register(PatientGroupByUser)
+class PatientGroupByUserAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'get_patientGroup']
+
+# @admin.register(IsStaffCategory)
+# class IsStaffCategoryAdmin(admin.ModelAdmin):
+#     list_display = ['id', 'get_users', 'isStaff']
     
 @admin.register(PatientByUser)
 class PatientByUserAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'get_patients']
+    list_display = ['id', 'user', 'get_patients', 'patientGroup']
 
 
     
