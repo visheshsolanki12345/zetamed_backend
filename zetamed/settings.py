@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'django_rest_passwordreset',
     'authentication',
     'patient',
+    'micro_api',
 ]
 
 MIDDLEWARE = [

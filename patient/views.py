@@ -69,7 +69,7 @@ class AllPatientGetData:
                 self.context = {'status' : status.HTTP_400_BAD_REQUEST, "details" : "data not found"}
 
         page = request.query_params.get('page')
-        paginator = Paginator(patient,1)
+        paginator = Paginator(patient,3)
 
         try:
             patient = paginator.page(page)
@@ -104,27 +104,26 @@ class AllPatientGetData:
         data = request.data
         try:
             obj = PatientDetails.objects.create(
-                name = "Viehsh Parmar",
-                # age = data['age'],
-                # gender = data['gender'],
-                # whichProof = data['whichProof'],
-                # proofId = data['proofId'],
-                # mobileNo = data['mobileNo'],
-                # email = data['email'],
-                # city = data['city'],
-                # state = data['state'],
-                # country = data['country'],
-                # zipcode = data['zipcode'],
-                # problem = data['problem'],
-                # problemDescription = data['problemDescription'],
+                name = data['name'],
+                age = data['age'],
+                gender = data['gender'],
+                whichProof = data['whichProof'],
+                proofId = data['proofId'],
+                mobileNo = data['mobileNo'],
+                email = data['email'],
+                city = data['city'],
+                state = data['state'],
+                country = data['country'],
+                zipcode = data['zipcode'],
+                problem = data['problem'],
+                problemDescription = data['problemDescription'],
             )
-            # if bool(request.FILES):
             signals.patient_profile_data.send(sender=None, request=request, obj = obj)
             context = {}
             try:
                 patient_list = []
                 context_data = {}
-                patint_group_id = "ff89350f-f084-448d-950d-10b344e1f8b5"
+                patint_group_id = data["patientGroup"]
                 patien_data = PatientByUser.objects.get(user = request.user)
                 context_data = patien_data.patientGroup
                 if patint_group_id in context_data:
@@ -236,7 +235,7 @@ class AllPatientGroupGetData:
 
 
 class AllPatientViewSet(viewsets.ViewSet):
-    # authentication_classes=[JWTAuthentication]
+    authentication_classes=[JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def list(self, request):
