@@ -13,7 +13,7 @@ from .models import (
     PatientGroupByUser,
 )
 from .serializer import (
-    PatientDetailsSerializer, PatientByUserSerializer, PatientGroupSerializer
+    PatientDetailsSerializer, PatientByUserSerializer, PatientGroupSerializer, PatientInfoSerializer
 )
 from rest_framework.pagination import PageNumberPagination
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -30,6 +30,8 @@ class AllPatientGetData:
         # start_time = time.time()
         query_filter = request.query_params.get('query')
         patient = ''
+        image_list = []
+        from collections import Counter
         if query_filter == None:
             query_filter = ''
 
@@ -39,38 +41,42 @@ class AllPatientGetData:
                 | Q(mobileNo__icontains=query_filter) 
                 | Q(email__icontains=query_filter) 
                 | Q(proofId__icontains=query_filter)
-            ).order_by('-createAt')
-        try:
+            ).values(
+                    'id', 'name', 'age', 'gender', 'mobileNo', 
+                    'email', 'problem', 'createAt', "patientImage"
+                ).order_by('-createAt')
+
+        if query_filter != "":
             id_list = []
             patient = []
-            image_list = []
             for i in obj_patient:
-                id_list.append(i.id)
+                id_list.append(i['id'])
             patient_check = PatientByUser.objects.filter(user = request.user, patient__in = id_list).distinct(),id_list
             
             for i in obj_patient:
                 for j in patient_check[1]:
-                    if i.id == j:
+                    if i['id'] == j:
                         patient.append(i)
                     else:
-                        continue   
+                        continue 
             for i in patient:
-                image_list.append(i['patientImage'])      
-        except:
+                image_list.append(str(i['patientImage']))    
+              
+        else:
             try:
                 obj = PatientByUser.objects.get(user = request.user)
-                patient = obj.patient.filter().values(
+                patient = obj.patient.all().values(
                     'id', 'name', 'age', 'gender', 'mobileNo', 
                     'email', 'problem', 'createAt', "patientImage"
-                )
+                ).order_by('-createAt')
                 for i in patient:
                     image_list.append(i['patientImage'])
             except:
                 self.context = {'status' : status.HTTP_400_BAD_REQUEST, "details" : "data not found"}
 
         page = request.query_params.get('page')
-        paginator = Paginator(patient,3)
-
+        paginator = Paginator(patient, 5)
+        total_patient_count = patient.__len__()
         try:
             patient = paginator.page(page)
         except PageNotAnInteger:
@@ -90,14 +96,25 @@ class AllPatientGetData:
             'data' : serializer.data, 'page': page, 
             'pages': paginator.num_pages,
             "images" : image_list,
+            'patientCount' : total_patient_count,
         }
         # print("--- %s seconds ---" % (time.time() - start_time))
         return
     
     def single_data_thread(self, pk):
         obj = PatientDetails.objects.filter(id = pk)
-        serializer = PatientDetailsSerializer(obj, many=True)
-        self.context = {'status' : status.HTTP_202_ACCEPTED, 'data' : serializer.data}
+        group_id = ''
+        for i in obj:
+            group_id = i.patientGroupId
+        obj_group = PatientGroup.objects.get(id = group_id)
+        patient_group = PatientGroup.objects.get(id = group_id)
+        serializer = PatientInfoSerializer(obj, many=True)
+        self.context = {
+            'status' : status.HTTP_202_ACCEPTED, 
+            'data' : serializer.data,
+            'patientGroup': obj_group.disease,
+            'patientGroupId': patient_group.id,
+        }
         return
 
     def create_data_thread(self, request):
@@ -117,12 +134,13 @@ class AllPatientGetData:
                 zipcode = data['zipcode'],
                 problem = data['problem'],
                 problemDescription = data['problemDescription'],
+                patientGroupId = data["patientGroup"],
             )
             signals.patient_profile_data.send(sender=None, request=request, obj = obj)
             context = {}
+            context_data = {}
             try:
                 patient_list = []
-                context_data = {}
                 patint_group_id = data["patientGroup"]
                 patien_data = PatientByUser.objects.get(user = request.user)
                 context_data = patien_data.patientGroup
@@ -130,8 +148,10 @@ class AllPatientGetData:
                     for i in context_data[patint_group_id]:
                         patient_list.append(i)
                     patient_list.append(str(obj.id))
+                    context = context_data
                     context[patint_group_id] = patient_list
                 else:
+                    context = context_data
                     context[patint_group_id] = [str(obj.id)]
                 patien_data.patient.add(obj)
                 patien_data.patientGroup = context
@@ -152,14 +172,12 @@ class AllPatientGetData:
 
     def update_data_thread(self, request, pk):
         data = request.data
-        file = request.FILES
         try:
             PatientDetails.objects.filter(
-                user = request.user,
                 id = pk,
             ).update(
                 name = data['name'],
-                # age = data['age'],
+                age = data['age'],
                 gender = data['gender'],
                 whichProof = data['whichProof'],
                 proofId = data['proofId'],
@@ -171,8 +189,10 @@ class AllPatientGetData:
                 zipcode = data['zipcode'],
                 problem = data['problem'],
                 problemDescription = data['problemDescription'],
-                # patientImage = f"patient-images/{file['patientImage']}",
+                patientGroupId = data["patientGroup"],
             )
+            obj = PatientDetails.objects.get(id = pk)
+            signals.patient_profile_data.send(sender=None, request=request, obj = obj)
             self.context = {'status' : status.HTTP_201_CREATED, 'details' : 'Patient record successfully Update!'}
         except:
             self.context = {'status' : status.HTTP_204_NO_CONTENT, 'details' : 'Patient not Update!'}
@@ -181,7 +201,7 @@ class AllPatientGetData:
     
     def delete_data_thread(self, pk):
         PatientDetails.objects.filter(id = pk).delete()
-        self.context = {'status' : status.HTTP_200_OK, 'data' : 'Patient Successfully Deleted.'}
+        self.context = {'status' : status.HTTP_200_OK, 'details' : 'Patient Successfully Deleted.'}
         return
     
 {
@@ -235,8 +255,8 @@ class AllPatientGroupGetData:
 
 
 class AllPatientViewSet(viewsets.ViewSet):
-    authentication_classes=[JWTAuthentication]
     permission_classes = [IsAuthenticated]
+    authentication_classes=[JWTAuthentication]
 
     def list(self, request):
         class_obj = AllPatientGetData()

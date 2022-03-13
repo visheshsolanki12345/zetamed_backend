@@ -48,6 +48,7 @@ class PatientDetails(models.Model):
     zipcode = models.IntegerField(null=True, blank=True)
     problem = models.CharField(max_length=500, null=True, blank=True)
     problemDescription = models.TextField(null=True, blank=True)
+    patientGroupId = models.CharField(null=True, blank=True, max_length=500)
     patientImage = models.ImageField(upload_to = user_directory_path_main('a', 'b'), default = 'patient-images/avtar.png', null=True, blank=True)
     createAt = models.DateTimeField(auto_now_add=True)
 

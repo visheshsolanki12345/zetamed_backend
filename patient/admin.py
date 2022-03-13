@@ -10,7 +10,7 @@ class PatientDetailsAdmin(admin.ModelAdmin):
     list_display = [
         'id', 'name', 'age', 'gender', 'whichProof', 'proofId', 'mobileNo', 'email',
         'city', 'state', 'country', 'zipcode', 'problem', 'problemDescription',
-        'patientImage', 'createAt'
+        'patientImage', 'patientGroupId', 'createAt'
     ]
 
 @admin.register(PatientGroup)

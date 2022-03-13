@@ -10,7 +10,7 @@ class PatientDetailsSerializer(serializers.ModelSerializer):
         model = PatientDetails
         fields = [
             'id', 'age', 'name', 'gender', 'mobileNo', 'email',
-            'problem','createAt', 'patientImage',
+            'problem','createAt',
         ]
 
 class PatientGroupSerializer(serializers.ModelSerializer):  
@@ -21,14 +21,15 @@ class PatientGroupSerializer(serializers.ModelSerializer):
             'id', 'disease', 'diseaseDiscription', 'createAt'
         ]
 
-# class PatientInfoSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = PatientDetails
-#         fields = [
-#             'id', 'age', 'name', 'gender', 'whichProof', 'proofId', 'mobileNo', 'email',
-#             'city', 'state', 'country', 'zipcode', 'problem', 'problemDescription',
-#             'patientImage', 'createAt',
-#         ]
+class PatientInfoSerializer(serializers.ModelSerializer):
+    createAt = serializers.DateTimeField(format = "%B %d, %Y, %I:%M%p") 
+    class Meta:
+        model = PatientDetails
+        fields = [
+            'id', 'age', 'name', 'gender', 'whichProof', 'proofId', 'mobileNo', 'email',
+            'city', 'state', 'country', 'zipcode', 'problem', 'problemDescription',
+            'patientImage', 'patientGroupId', 'createAt',
+        ]
 
 class PatientByUserSerializer(serializers.ModelSerializer):
     patient = PatientDetailsSerializer(many=True, read_only=True)
