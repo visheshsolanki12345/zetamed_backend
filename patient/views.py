@@ -29,6 +29,7 @@ class AllPatientGetData:
     def all_data_thread(self, request):
         # start_time = time.time()
         query_filter = request.query_params.get('query')
+        query_page = request.query_params.get('page')
         patient = ''
         image_list = []
         from collections import Counter
@@ -58,9 +59,7 @@ class AllPatientGetData:
                     if i['id'] == j:
                         patient.append(i)
                     else:
-                        continue 
-            for i in patient:
-                image_list.append(str(i['patientImage']))    
+                        continue   
               
         else:
             try:
@@ -69,13 +68,11 @@ class AllPatientGetData:
                     'id', 'name', 'age', 'gender', 'mobileNo', 
                     'email', 'problem', 'createAt', "patientImage"
                 ).order_by('-createAt')
-                for i in patient:
-                    image_list.append(i['patientImage'])
             except:
                 self.context = {'status' : status.HTTP_400_BAD_REQUEST, "details" : "data not found"}
 
         page = request.query_params.get('page')
-        paginator = Paginator(patient, 5)
+        paginator = Paginator(patient, 2)
         total_patient_count = patient.__len__()
         try:
             patient = paginator.page(page)
@@ -86,7 +83,9 @@ class AllPatientGetData:
 
         if page == None:
             page = 1
-
+        for i in patient:
+            for i in patient:
+                image_list.append(str(i['patientImage']))  
         page = int(page)
 
         page = int(page)
@@ -97,6 +96,7 @@ class AllPatientGetData:
             'pages': paginator.num_pages,
             "images" : image_list,
             'patientCount' : total_patient_count,
+            'query': query_filter, 
         }
         # print("--- %s seconds ---" % (time.time() - start_time))
         return
@@ -110,8 +110,8 @@ class AllPatientGetData:
         patient_group = PatientGroup.objects.get(id = group_id)
         serializer = PatientInfoSerializer(obj, many=True)
         self.context = {
-            'status' : status.HTTP_202_ACCEPTED, 
-            'data' : serializer.data,
+            'status': status.HTTP_202_ACCEPTED, 
+            'data': serializer.data,
             'patientGroup': obj_group.disease,
             'patientGroupId': patient_group.id,
         }
