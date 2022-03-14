@@ -1,12 +1,13 @@
 from pathlib import Path
 from datetime import timedelta
 import os
+# from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-qz3s#hz3ya(7ovg1=j3!g2^hzhz^95i8h$!81g@hd62h6zvgh#'
 
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
@@ -101,9 +102,9 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
     ],
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
-    ]
+    # 'DEFAULT_RENDERER_CLASSES': [
+    #     'rest_framework.renderers.JSONRenderer',
+    # ]
 }
 
 
@@ -150,10 +151,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
-# Email Configure
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'visheshsolanki12345@gmail.com'
-EMAIL_HOST_PASSWORD = 'wvvnshtnrqhmwiwt'
+
+
+# Password Reset Timeout
+PASSWORD_RESET_TIMEOUT = 900 # 900 = 15 min

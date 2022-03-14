@@ -48,7 +48,7 @@ class PatientDetails(models.Model):
     zipcode = models.IntegerField(null=True, blank=True)
     problem = models.CharField(max_length=500, null=True, blank=True)
     problemDescription = models.TextField(null=True, blank=True)
-    patientGroupId = models.CharField(null=True, blank=True, max_length=500)
+    patientGroupId = models.ForeignKey(PatientGroup, on_delete=models.SET_NULL,null=True, blank=True)
     patientImage = models.ImageField(upload_to = user_directory_path_main('a', 'b'), default = 'patient-images/avtar.png', null=True, blank=True)
     createAt = models.DateTimeField(auto_now_add=True)
 
@@ -60,7 +60,7 @@ class PatientByUser(models.Model):
     id = models.UUIDField(primary_key = True,default = uuid.uuid4, editable = False)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     patient = models.ManyToManyField(PatientDetails, blank=True)
-    patientGroup = jsonfield.JSONField()
+    # patientGroup = jsonfield.JSONField()
 
     # def save(self, *args, **kwargs):
     #     context = {}

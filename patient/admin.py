@@ -27,7 +27,8 @@ class PatientGroupByUserAdmin(admin.ModelAdmin):
     
 @admin.register(PatientByUser)
 class PatientByUserAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'get_patients', 'patientGroup']
+    list_display = ['id', 'user', 'get_patients']
+    # list_display = ['id', 'user', 'get_patients', 'patientGroup']
 
 
     
