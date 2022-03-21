@@ -9,16 +9,19 @@ from . import signals
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .models import (
     PatientDetails, PatientByUser, PatientGroup,
-    PatientGroupByUser,
+    PatientGroupByUser, Appointment, AppointmentByUser
 )
 from .serializer import (
-    PatientDetailsSerializer, PatientByUserSerializer, PatientGroupSerializer, PatientInfoSerializer
+    PatientDetailsSerializer, PatientByUserSerializer, 
+    PatientGroupSerializer, PatientInfoSerializer, AppointmentSerializer,
+    AppointmentByUserSerializer
 )
-from rest_framework.pagination import PageNumberPagination
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 import time
 import re
+from django.core.cache import cache
+
 
 # Create your views here.
 class AllPatientGetData:
@@ -57,10 +60,14 @@ class AllPatientGetData:
                     ).order_by('-createAt')
         else:
             try:
-                patient = obj.patient.all().values(
-                    'id', 'name', 'age', 'gender', 'mobileNo', 
-                    'email', 'problem', 'createAt', "patientImage"
-                ).order_by('-createAt')
+                if cache.get(str(request.user.id)):
+                    patient = cache.get(str(request.user.id))
+                else:
+                    patient = obj.patient.all().values(
+                        'id', 'name', 'age', 'gender', 'mobileNo', 
+                        'email', 'problem', 'createAt', "patientImage"
+                    ).order_by('-createAt')
+                    cache.set(str(request.user.id), patient)
             except:
                 self.context = {'status' : status.HTTP_400_BAD_REQUEST, "details" : "data not found"}
 
@@ -143,32 +150,15 @@ class AllPatientGetData:
             obj.patientGroupId = group_obj
             obj.save()
             signals.patient_profile_data.send(sender=None, request=request, obj = obj)
-            # context = {}
-            # context_data = {}
             try:
-                # patient_list = []
-                # patint_group_id = data["patientGroup"]
                 patien_data = PatientByUser.objects.get(user = request.user)
-                # context_data = patien_data.patientGroup
-                # if patint_group_id in context_data:
-                #     for i in context_data[patint_group_id]:
-                #         patient_list.append(i)
-                #     patient_list.append(str(obj.id))
-                #     context = context_data
-                #     context[patint_group_id] = patient_list
-                # else:
-                #     context = context_data
-                #     context[patint_group_id] = [str(obj.id)]
                 patien_data.patient.add(obj)
-                # patien_data.patientGroup = context
                 patien_data.save()
             except:
                 patien_data = PatientByUser.objects.create(user = request.user)
-                # context[patint_group_id] = [str(obj.id)]
-                # patien_data.patientGroup = context
                 patien_data.patient.add(obj)
                 patien_data.save()
-            
+            cache.delete(str(request.user.id))
             self.context = {'status' : status.HTTP_201_CREATED, 'details' : 'Patient record successfully added!'}
         except:
             self.context = {'status' : status.HTTP_204_NO_CONTENT, 'details' : 'Patient not added!'}
@@ -203,15 +193,17 @@ class AllPatientGetData:
             obj.patientGroupId = group_obj
             obj.save()
             signals.patient_profile_data.send(sender=None, request=request, obj = obj)
+            cache.delete(str(request.user.id))
             self.context = {'status' : status.HTTP_201_CREATED, 'details' : 'Patient record successfully Update!'}
         except:
             self.context = {'status' : status.HTTP_204_NO_CONTENT, 'details' : 'Patient not Update!'}
         return
 
     
-    def delete_data_thread(self, pk):
+    def delete_data_thread(self, request, pk):
         PatientDetails.objects.filter(id = pk).delete()
         self.context = {'status' : status.HTTP_200_OK, 'details' : 'Patient Successfully Deleted.'}
+        cache.delete(str(request.user.id))
         return
     
 
@@ -222,36 +214,11 @@ class AllPatientGroupGetData:
 
     def all_data_thread(self, request):
         obj_group = PatientGroupByUser.objects.get(user = request.user)
-        # query_filter = request.query_params.get('query')
-        # patient_group_data = ''
-        # if query_filter == None:
-        #     query_filter = ''
-        # if query_filter != '':
-        #     patient_group_data = obj_group.patientGroup.filter(disease = query_filter).order_by('-createAt')
-        # else:
-        #     patient_group_data = obj_group.patientGroup.all().order_by('-createAt')
-
         patient_group_data = obj_group.patientGroup.all().order_by('-createAt')
-        # page = request.query_params.get('page')
-        # paginator = Paginator(patient_group_data, 2)
-        # try:
-        #     patient_group_data = paginator.page(page)
-        # except PageNotAnInteger:
-        #     patient_group_data = paginator.page(1)
-        # except EmptyPage:
-        #     patient_group_data = paginator.page(paginator.num_pages)
-
-        # if page == None:
-        #     page = 1 
-        # page = int(page)
-
-        # page = int(page)
         serializer = PatientGroupSerializer(patient_group_data, many=True)
         self.context = {
             'status' : status.HTTP_202_ACCEPTED, 
             'data' : serializer.data,
-            # 'page': page, 
-            # 'pages': paginator.num_pages,
         }
 
     def single_data_thread(self, pk):
@@ -291,6 +258,56 @@ class AllPatientGroupGetData:
         self.context = {'status' : status.HTTP_200_OK, 'details' : 'Group Successfully Deleted.'}
         return
 
+
+class PatientAppointmentThread:
+    def __init__(self):
+        Thread.__init__(self,)
+        self.context = ''
+    
+    def all_data_thread(self, request):
+        try:
+            obj = AppointmentByUser.objects.get(user = request.user)
+            appointment_data = obj.appointment.all()
+            serializer = AppointmentSerializer(appointment_data, many=True)
+            self.context = {"status": status.HTTP_200_OK, "data": serializer.data }
+        except:
+            self.context = {"status": status.HTTP_404_NOT_FOUND, "details": "data not found" }
+
+
+    def create_data_thread(self, request):
+        try:
+            data = request.data
+            patient_obj = PatientDetails.objects.get(id = data['id'])
+            obj = Appointment.objects.create(
+                patient = patient_obj,
+                patientName = patient_obj.name,
+                title = patient_obj.name,
+                startDate = data['startDate'],
+                endDate = data['endDate'],
+            )
+            try:
+                appointment_user_by = AppointmentByUser.objects.get(user = request.user)
+                appointment_user_by.appointment.add(obj)
+                appointment_user_by.save()
+            except:
+                appointment_user_by = AppointmentByUser.objects.create(user = request.user)
+                appointment_user_by.appointment.add(obj)
+                appointment_user_by.save()
+
+            self.context = {'status' : status.HTTP_201_CREATED, 'details' : 'Patient Appointment successfully added!'}
+        except:
+            self.context = {'status' : status.HTTP_204_NO_CONTENT, 'details' : 'Patient not added!'}
+        return
+
+    
+    def delete_data_thread(self, request, pk):
+        Appointment.objects.filter(id = pk).delete()
+        self.context = {'status' : status.HTTP_200_OK, 'details' : 'Patient Appointment Successfully Deleted.'}
+        return
+
+
+
+
 class AllPatientViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes=[JWTAuthentication]
@@ -325,7 +342,7 @@ class AllPatientViewSet(viewsets.ViewSet):
 
     def destroy(self, request, pk=None):
         class_obj = AllPatientGetData()
-        patient_ret = Thread(target=class_obj.delete_data_thread, args=(pk,))
+        patient_ret = Thread(target=class_obj.delete_data_thread, args=(request, pk))
         patient_ret.start()
         patient_ret.join()
         return Response(class_obj.context)
@@ -371,4 +388,59 @@ class PatientGroupViewSet(viewsets.ViewSet):
         patient_ret.join()
         return Response(class_obj.context)
 
-    
+
+
+class PatientAppointmentViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+    authentication_classes=[JWTAuthentication]
+
+    def list(self, request):
+        class_obj = PatientAppointmentThread()
+        patient_appo_list = Thread(target=class_obj.all_data_thread, args=(request,))
+        patient_appo_list.start()
+        patient_appo_list.join()
+        return Response(class_obj.context)
+
+    # def retrieve(self, request, pk=None):
+    #     class_obj = PatientAppointmentThread()
+    #     patient_group_list = Thread(target=class_obj.single_data_thread, args=(pk,))
+    #     patient_group_list.start()
+    #     patient_group_list.join()
+    #     return Response(class_obj.context)
+
+    def create(self, request):
+        class_obj = PatientAppointmentThread()
+        patient_appo_list = Thread(target=class_obj.create_data_thread, args=(request,))
+        patient_appo_list.start()
+        patient_appo_list.join()
+        return Response(class_obj.context)
+
+    # def update(self, request, pk=None):
+    #     class_obj = AllPatientGroupGetData()
+    #     patient_group_update = Thread(target=class_obj.update_data_thread, args=(request, pk))
+    #     patient_group_update.start()
+    #     patient_group_update.join()
+    #     return Response(class_obj.context)
+
+    def destroy(self, request, pk=None):
+        class_obj = PatientAppointmentThread()
+        patient_appo_list = Thread(target=class_obj.delete_data_thread, args=(pk,))
+        patient_appo_list.start()
+        patient_appo_list.join()
+        return Response(class_obj.context)
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def patient_search(request):
+    obj = PatientByUser.objects.get(user = request.user)
+    patient = obj.patient.all().values('id', 'name').order_by('-createAt')
+    return Response(patient)
+
+
+
+
+
+
+def test(request):
+    pass

@@ -9,7 +9,7 @@ SECRET_KEY = 'django-insecure-qz3s#hz3ya(7ovg1=j3!g2^hzhz^95i8h$!81g@hd62h6zvgh#
 
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -22,9 +22,13 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'django_rest_passwordreset',
+    'django_celery_results',
     'authentication',
     'patient',
     'micro_api',
+    'admin_work',
+    'comman_functions',
+    'task_scheduler',
 ]
 
 MIDDLEWARE = [
@@ -88,7 +92,7 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Kolkata'
 USE_I18N = True
 USE_L10N = True
-USE_TZ = True
+USE_TZ = False
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -108,11 +112,12 @@ REST_FRAMEWORK = {
 }
 
 
-# CORS_ORIGIN_ALLOW_ALL = True
+CORS_ORIGIN_ALLOW_ALL = True
 # CORS_ORIGIN_WHITELIST = (
 #   'http://localhost:3000',
 # )
-CORS_ALLOW_ALL_ORIGINS = True
+
+
 
 
 # JWT Authentication Configure
@@ -151,7 +156,25 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
-
-
 # Password Reset Timeout
 PASSWORD_RESET_TIMEOUT = 900 # 900 = 15 min
+
+
+# Caching
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
+
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379'
+# CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379'
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TEST_SELERLIZER = 'json'

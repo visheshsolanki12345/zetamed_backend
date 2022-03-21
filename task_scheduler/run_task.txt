@@ -1,0 +1,1 @@
+celery -A task_scheduler  worker -l info -P eventlet

@@ -3,7 +3,8 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from rest_framework.response import Response
-from . import comman_function
+from comman_functions import views
+from task_scheduler import task
 from rest_framework import status
 from threading import Thread
 from datetime import datetime, timedelta
@@ -19,7 +20,7 @@ from .models import OtpVerify, Profile
 from .serializer import (
     ProfileSerializer, UserSerializerWithToken, ChangePasswordSerializer
     )
-
+from django.db.models import Q
 # Create your views here.
 
 
@@ -32,12 +33,22 @@ class SendOTPThread:
         set_signal = ''
         set_count_signal = ''
         data = request.data
+        checkEmail = User.objects.filter(
+              Q(email = data['email'])
+            | Q(username = data['email'])).exists()
+
+        if checkEmail:
+            self.context = {'status' : status.HTTP_400_BAD_REQUEST, 'details' : 'This email allready exists try another email id.'}
+            set_signal = False
+            return
+
         checkNo = OtpVerify.objects.filter(mobileNo = data['mobileNo'], email = data['email'], isVerify = True).exists()
         if checkNo:
             self.context = {'status' : status.HTTP_208_ALREADY_REPORTED, 'details' : 'You allready Message Verify please you should go register or login'}
             set_signal = False
             return
-        email_check = comman_function.email_check_validation(data['email'])
+
+        email_check = views.email_check_validation(data['email'])
         if email_check == False:
             self.context = {'status' : status.HTTP_400_BAD_REQUEST, 'details' : 'Please fill proper email'}
             return
@@ -60,9 +71,9 @@ class SendOTPThread:
         set_signal = True
 
         if set_signal == True:
-            otp = comman_function.otp_generate()
+            otp = views.otp_generate()
             msg = f"Hello There this is your OTP {otp}"
-            msg_status, msg_id = comman_function.otp_request_twillo(data['mobileNo'], msg)
+            task.otp_request_twillo_task.delay(data['mobileNo'], msg)
             check_update = OtpVerify.objects.filter(mobileNo = data['mobileNo'], email = data['email']).exists()
             if check_update:
                 obj_count = OtpVerify.objects.get(
@@ -72,7 +83,7 @@ class SendOTPThread:
                 if set_count_signal:
                     obj_count.maxTry = 1
                 obj_count.maxTry += 1
-                obj_count.msgStatus = msg_status
+                # obj_count.msgStatus = msg_status
                 obj_count.isOtp = otp
                 obj_count.save()
             else:
@@ -80,8 +91,8 @@ class SendOTPThread:
                     mobileNo = data['mobileNo'],
                     email = data['email'],
                     isOtp = otp,
-                    msgStatus = msg_status,
-                    msgId = msg_id,
+                    # msgStatus = msg_status,
+                    # msgId = msg_id,
                 )
             context = {
                 'status' : status.HTTP_202_ACCEPTED, 
@@ -128,7 +139,7 @@ class RegisterUserAuth:
 
     def register_user_thread(self, request):
         data = request.data
-        email_check = comman_function.email_check_validation(data['email'])
+        email_check = views.email_check_validation(data['email'])
         if email_check == False:
             self.context = {'status' : status.HTTP_400_BAD_REQUEST, 'details' : 'Please fill proper email'}
             return
@@ -144,6 +155,7 @@ class RegisterUserAuth:
                     first_name= data['firstName'],
                     username=data['email'],
                     email=data['email'],
+                    is_staff=True,
                     password=make_password(data['password'])
                 )
                 serializer = UserSerializerWithToken(user, many=False)
@@ -214,23 +226,6 @@ class GetUserProfile:
             self.context = {"status": status.HTTP_400_BAD_REQUEST, "details" : "Not Found"}
         return
     
-                 
-# {
-# "first_name" : "vishesh",
-# "last_name" : "solanki",
-# "email" : "visheshsolanki1234@gmail.com",
-# "password" : "vishesh@123",
-# "mobileNo" : 8878401574,
-# "iAm" : "Doctore",
-# "speciality" : "eye",
-# "clinicName" : "Zetamonk"
-# }
-
-{
-"firstName" : "vishesh",
-"speciality" : "knee",
-"clinicName" : "Ak"
-}
 
 ##========================== Send Otp =====================================##
 @api_view(['POST'])
@@ -348,111 +343,9 @@ def get_user_profile(request):
     context_data = class_obj.context
     return Response(context_data)
 
-
-
-# import { React, useState, Fragment, useEffect } from 'react'
-# import { useAlert } from "react-alert";
-# import axios from 'axios'
-# import { useDispatch, useSelector } from 'react-redux'
-# import { userProfileAction, getUserData, updateProfile } from '../../Actions/AuthenticationAction'
-
-# const ProfileChange = () => {
-
-#     const userInfo = JSON.parse(localStorage.getItem('user-details'))
-#     const dispatch = useDispatch()
-#     const { profile } = useSelector((state) => state.profile)
-#     const { user } = useSelector((state) => state.user)
-
-#     const alert = useAlert();
-#     const [firstName, setFirstName] = useState(user && user && user.data && user.data[0].first_name)
-#     const [speciality, setSpeciality] = useState(profile && profile && profile.data && profile.data[0].speciality)
-#     const [clinicName, setClinicName] = useState(profile && profile && profile.data && profile.data[0].clinicName)
-#     const [selectedImage, setSelectedImage] = useState("");
-#     const [imgSignal, setImageSignal] = useState()
-#     const [letestImg, setLetestImg] = useState("")
-
-#     const updateProfileDataChange = (e) => {
-#         const reader = new FileReader();
-    
-#         reader.onload = () => {
-#           if (reader.readyState === 2) {
-#             // setAvatarPreview(reader.result);
-#             setSelectedImage(e.target.files[0]);
-#           }
-#         };
-    
-#         reader.readAsDataURL(e.target.files[0]);
-#       };
-    
-
-#       const changeProfile = (e) => {
-#         e.preventDefault();
-#         let id = user && user && user.data && user.data[0].id
-#         const myForm = new FormData();
-#         myForm.set("firstName", firstName);
-#         myForm.set("speciality", speciality);
-#         myForm.set("clinicName", clinicName);
-#         myForm.set("selectedImage", selectedImage);
-#         dispatch(updateProfile(id, myForm));
-#       };
-
-#     useEffect(() => {
-#         if (profile && profile.length === 0) {
-#             dispatch(userProfileAction())
-#         }
-#         if (user && user.length === 0) {
-#             dispatch(getUserData())
-#         }
-#     }, [dispatch, profile, user])
-
-#     return (
-#         <Fragment>
-#             <div>Profile Change</div>
-#             <div>
-#                 <form
-#                     className="updateProfileForm"
-#                     encType="multipart/form-data"
-#                     onSubmit={changeProfile}
-#                 >
-#                     {/* <input
-#                         type="text"
-#                         placeholder="Name"
-#                         value={firstName}
-#                         onChange={(e) => setFirstName(e.target.value)}
-#                     />
-#                     <input
-#                         type="text"
-#                         placeholder="Speciality"
-#                         value={speciality}
-#                         onChange={(e) => setSpeciality(e.target.value)}
-#                     />
-
-#                     <input
-#                         type="text"
-#                         placeholder="Clinic Name"
-#                         value={clinicName}
-#                         onChange={(e) => setClinicName(e.target.value)}
-#                     /> */}
-
-#                     <div id="updateProfileImage">
-#                         {/* <img src={avatarPreview} alt="Avatar Preview" /> */}
-#                         <input
-#                             type="file"
-#                             name="avatar"
-#                             accept="image/*"
-#                             onChange={updateProfileDataChange}
-#                         />
-#                     </div>
-#                     <input
-#                         type="submit"
-#                         value="Update"
-#                         className="updateProfileBtn"
-#                     />
-#                 </form>
-#                 <br />
-#             </div>
-#         </Fragment>
-#     )
-# }
-
-# export default ProfileChange
+# from ..task_scheduler import task
+# @api_view(['GET'])
+# def progress_view(request):
+#     res = task.send_mail_task.delay()
+#     print('..................', res)
+#     return Response("ok")

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
-    PatientDetails, IsStaffCategory, PatientByUser, PatientGroup,
-    PatientGroupByUser, 
+    PatientDetails, PatientByUser, PatientGroup,
+    PatientGroupByUser, Appointment, AppointmentByUser
 )
 # Register your models here.
 
@@ -12,6 +12,11 @@ class PatientDetailsAdmin(admin.ModelAdmin):
         'city', 'state', 'country', 'zipcode', 'problem', 'problemDescription',
         'patientImage', 'patientGroupId', 'createAt'
     ]
+@admin.register(PatientByUser)
+class PatientByUserAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'get_patients']
+
+
 
 @admin.register(PatientGroup)
 class PatientGroupAdmin(admin.ModelAdmin):
@@ -21,14 +26,21 @@ class PatientGroupAdmin(admin.ModelAdmin):
 class PatientGroupByUserAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'get_patientGroup']
 
-# @admin.register(IsStaffCategory)
-# class IsStaffCategoryAdmin(admin.ModelAdmin):
-#     list_display = ['id', 'get_users', 'isStaff']
+
+
+@admin.register(Appointment)
+class AppointmentAdmin(admin.ModelAdmin):
+    list_display = [
+        'id', 'patient', 'patientName', 'title', 'startDate', 'endDate', 
+        'isAppointmentDone', 'createAt'
+        ]
+
+@admin.register(AppointmentByUser)
+class AppointmentByUserAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'get_appointments']
     
-@admin.register(PatientByUser)
-class PatientByUserAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'get_patients']
-    # list_display = ['id', 'user', 'get_patients', 'patientGroup']
+
+
 
 
     

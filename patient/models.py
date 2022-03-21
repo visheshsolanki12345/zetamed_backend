@@ -24,7 +24,7 @@ class PatientGroup(models.Model):
     diseaseDiscription = models.TextField(null=True, blank=True)
     createAt = models.DateTimeField(auto_now_add=True)
     def __str__(self):
-        return str(self.id)
+        return str(self.disease)
 
 class PatientGroupByUser(models.Model):
     id = models.UUIDField(primary_key = True,default = uuid.uuid4, editable = False)
@@ -53,45 +53,36 @@ class PatientDetails(models.Model):
     createAt = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return str(self.id)
+        return str(self.name)
 
 
 class PatientByUser(models.Model):
     id = models.UUIDField(primary_key = True,default = uuid.uuid4, editable = False)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     patient = models.ManyToManyField(PatientDetails, blank=True)
-    # patientGroup = jsonfield.JSONField()
-
-    # def save(self, *args, **kwargs):
-    #     context = {}
-    #     self.patientGroup 
-    #     super(PatientByUser, self).save(*args, **kwargs)
 
     def get_patients(self):
         return ",".join([str(p) for p in self.patient.all()])
     
-    # def get_patientGroup(self):
-    #     return ",".join([str(p) for p in self.patientGroup.all()])
-
     def __str__(self):
-        return str(self.id)
+        return str(self.user)
     
 
-class IsStaffCategory(models.Model):
+class Appointment(models.Model):
     id = models.UUIDField(primary_key = True,default = uuid.uuid4, editable = False)
-    user = models.ManyToManyField(User)
-    isStaff = models.CharField(null=True, blank=True, max_length=500)
-    def get_users(self):
-        return ",".join([str(p) for p in self.user.all()])
-
+    patient = models.ForeignKey(PatientDetails, on_delete=models.CASCADE, null=True, blank=True)
+    patientName = models.CharField(max_length=400, null=True, blank=True)
+    title = models.CharField(max_length=400, null=True, blank=True)
+    startDate = models.DateTimeField(auto_now_add=False, blank=True, null=True)
+    endDate = models.DateTimeField(auto_now_add=False, blank=True, null=True)
+    isAppointmentDone = models.BooleanField(default=False)
+    createAt = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     def __str__(self):
-        return str(self.id)
+        return str(f"{self.patient}")
 
-
-# class StaffDetails(models.Model):
-#     user = models.ManyToManyField(User)
-#     name = models.CharField(null=True, blank=True, max_length=500)
-#     degree = models.CharField(null=True, blank=True, max_length=500)
-#     mobile = models.CharField(null=True, blank=True, max_length=500)
-#     email = models.CharField(null=True, blank=True, max_length=500)
-#     email = models.CharField(null=True, blank=True, max_length=500)
+class AppointmentByUser(models.Model):
+    id = models.UUIDField(primary_key = True,default = uuid.uuid4, editable = False)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    appointment = models.ManyToManyField(Appointment)
+    def get_appointments(self):
+        return ",".join([str(p) for p in self.appointment.all()])
