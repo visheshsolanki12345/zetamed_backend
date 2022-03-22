@@ -299,8 +299,20 @@ class PatientAppointmentThread:
             self.context = {'status' : status.HTTP_204_NO_CONTENT, 'details' : 'Patient not added!'}
         return
 
+    def update_data_thread(self, request, pk):
+        data = request.data
+        try:
+            obj = Appointment.objects.get(id = pk)
+            obj.title = data['title']
+            obj.startDate = data['startDate']
+            obj.endDate = data['endDate']
+            obj.save()
+            self.context = {'status' : status.HTTP_202_ACCEPTED, 'details' : 'Patient appointment successfully Updated!'}
+        except:
+            self.context = {'status' : status.HTTP_304_NOT_MODIFIED, 'details' : 'Patient appointment not Updated!'}
+        return
     
-    def delete_data_thread(self, request, pk):
+    def delete_data_thread(self, pk):
         Appointment.objects.filter(id = pk).delete()
         self.context = {'status' : status.HTTP_200_OK, 'details' : 'Patient Appointment Successfully Deleted.'}
         return
@@ -401,13 +413,6 @@ class PatientAppointmentViewSet(viewsets.ViewSet):
         patient_appo_list.join()
         return Response(class_obj.context)
 
-    # def retrieve(self, request, pk=None):
-    #     class_obj = PatientAppointmentThread()
-    #     patient_group_list = Thread(target=class_obj.single_data_thread, args=(pk,))
-    #     patient_group_list.start()
-    #     patient_group_list.join()
-    #     return Response(class_obj.context)
-
     def create(self, request):
         class_obj = PatientAppointmentThread()
         patient_appo_list = Thread(target=class_obj.create_data_thread, args=(request,))
@@ -415,12 +420,12 @@ class PatientAppointmentViewSet(viewsets.ViewSet):
         patient_appo_list.join()
         return Response(class_obj.context)
 
-    # def update(self, request, pk=None):
-    #     class_obj = AllPatientGroupGetData()
-    #     patient_group_update = Thread(target=class_obj.update_data_thread, args=(request, pk))
-    #     patient_group_update.start()
-    #     patient_group_update.join()
-    #     return Response(class_obj.context)
+    def update(self, request, pk=None):
+        class_obj = PatientAppointmentThread()
+        patient_group_update = Thread(target=class_obj.update_data_thread, args=(request, pk))
+        patient_group_update.start()
+        patient_group_update.join()
+        return Response(class_obj.context)
 
     def destroy(self, request, pk=None):
         class_obj = PatientAppointmentThread()
@@ -428,6 +433,7 @@ class PatientAppointmentViewSet(viewsets.ViewSet):
         patient_appo_list.start()
         patient_appo_list.join()
         return Response(class_obj.context)
+
 
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])

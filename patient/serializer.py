@@ -50,14 +50,20 @@ class AppointmentSerializer(serializers.ModelSerializer):
     # patient = PatientDetailsSerializer(many=False, read_only=True)
     # startDate = serializers.DateTimeField(format="%Y %#m, %#d, %#H, %#M")
     # endDate = serializers.DateTimeField(format="%Y %#m, %#d, %#H, %#M")
+    start = serializers.SerializerMethodField(read_only=True)
+    end = serializers.SerializerMethodField(read_only=True)
     createAt = serializers.DateTimeField(format="%B %d, %Y, %I:%M%p")
     class Meta:
         model = Appointment
         fields = [
-            'id', 'patient', 'patientName', 'title', 'startDate', 'endDate',
+            'id', 'patient', 'patientName', 'title', 'startDate', 'endDate', 'start', 'end',
             'isAppointmentDone', 'createAt'
         ]
+    def get_start(self, obj):
+        return obj.startDate
 
+    def get_end(self, obj):
+        return obj.endDate
 
 class AppointmentByUserSerializer(serializers.ModelSerializer):
     appointment = AppointmentSerializer(many=True, read_only=True)
