@@ -440,7 +440,7 @@ class PatientAppointmentViewSet(viewsets.ViewSet):
 @permission_classes([IsAuthenticated])
 def patient_search(request):
     obj = PatientByUser.objects.get(user = request.user)
-    patient = obj.patient.all().values('id', 'name').order_by('-createAt')
+    patient = obj.patient.all().values('id', 'name', 'mobileNo').order_by('-createAt')
     return Response(patient)
 
 
