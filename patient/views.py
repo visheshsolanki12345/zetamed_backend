@@ -280,7 +280,7 @@ class PatientAppointmentThread:
             patient_obj = PatientDetails.objects.get(id = data['id'])
             obj = Appointment.objects.create(
                 patient = patient_obj,
-                patientName = patient_obj.name,
+                patientName = patient_obj.problem,
                 title = patient_obj.name,
                 startDate = data['startDate'],
                 endDate = data['endDate'],
@@ -303,9 +303,12 @@ class PatientAppointmentThread:
         data = request.data
         try:
             obj = Appointment.objects.get(id = pk)
-            obj.title = data['title']
-            obj.startDate = data['startDate']
-            obj.endDate = data['endDate']
+            if data['check'] == '1':
+                obj.patientName = data['patientName']
+                obj.startDate = data['startDate']
+                obj.endDate = data['endDate']
+            elif data['check'] == '2':
+                obj.isAppointmentDone = data['conformation']
             obj.save()
             self.context = {'status' : status.HTTP_202_ACCEPTED, 'details' : 'Patient appointment successfully Updated!'}
         except:

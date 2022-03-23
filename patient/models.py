@@ -75,7 +75,7 @@ class Appointment(models.Model):
     title = models.CharField(max_length=400, null=True, blank=True)
     startDate = models.DateTimeField(auto_now_add=False, blank=True, null=True)
     endDate = models.DateTimeField(auto_now_add=False, blank=True, null=True)
-    isAppointmentDone = models.BooleanField(default=False)
+    isAppointmentDone = models.CharField(max_length=225, default='Panding', null=True, blank=True)
     createAt = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     def __str__(self):
         return str(f"{self.patient}")
