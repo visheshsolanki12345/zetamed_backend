@@ -86,3 +86,39 @@ class AppointmentByUser(models.Model):
     appointment = models.ManyToManyField(Appointment)
     def get_appointments(self):
         return ",".join([str(p) for p in self.appointment.all()])
+
+
+class Drug(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    typeOfDrug = models.CharField(max_length=225, null=True, blank=True)
+    drug = models.CharField(max_length=225, null=True, blank=True)
+    stengh = models.CharField(max_length=225, null=True, blank=True)
+    instructions = models.CharField(max_length=225, null=True, blank=True)
+    def __str__(self):
+        return self.drug
+
+class Prescription(models.Model):
+    id = models.UUIDField(primary_key = True,default = uuid.uuid4, editable = False)
+    appointment = models.ForeignKey(Appointment, on_delete=models.SET_NULL, null=True, blank=True)
+    drug = models.ForeignKey(Drug, on_delete=models.SET_NULL, null=True, blank=True)
+    quantity = models.CharField(max_length=225, null=True, blank=True)
+    frequncy = jsonfield.JSONField()
+    duration = models.CharField(max_length=225, null=True, blank=True)
+    instructions = models.TextField(null=True, blank=True)
+    note = models.TextField(null=True, blank=True)
+    dose = models.TextField(null=True, blank=True)
+    doseTime = models.TextField(null=True, blank=True)
+    beforeDrug = models.TextField(null=True, blank=True)
+    def __str__(self):
+        return self.drug
+
+class PrescriptionByUser(models.Model):
+    id = models.UUIDField(primary_key = True,default = uuid.uuid4, editable = False)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    prescription = models.ManyToManyField(Prescription, blank=True)
+
+    def get_prescriptions(self):
+        return ",".join([str(p) for p in self.prescription.all()])
+    
+    def __str__(self):
+        return str(self.user)
