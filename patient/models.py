@@ -18,20 +18,6 @@ def user_directory_path_main(instance, filename):
     #     os.remove(full_path)
     # return profile_pic_name
 
-class PatientGroup(models.Model):
-    id = models.UUIDField(primary_key = True,default = uuid.uuid4, editable = False)
-    disease = models.CharField(null=True, blank=True, max_length=500)
-    diseaseDiscription = models.TextField(null=True, blank=True)
-    createAt = models.DateTimeField(auto_now_add=True)
-    def __str__(self):
-        return str(self.disease)
-
-class PatientGroupByUser(models.Model):
-    id = models.UUIDField(primary_key = True,default = uuid.uuid4, editable = False)
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    patientGroup = models.ManyToManyField(PatientGroup, blank=True)
-    def get_patientGroup(self):
-        return ",".join([str(p) for p in self.patientGroup.all()])
 
 class PatientDetails(models.Model):
     id = models.UUIDField(primary_key = True,default = uuid.uuid4, editable = False)
@@ -42,13 +28,9 @@ class PatientDetails(models.Model):
     proofId = models.CharField(null=True, blank=True, max_length=500)
     mobileNo = models.IntegerField(null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
-    city = models.CharField(null=True, blank=True, max_length=400)
-    state = models.CharField(null=True, blank=True, max_length=400)
-    country = models.CharField(null=True, blank=True, max_length=400)
-    zipcode = models.IntegerField(null=True, blank=True)
+    address = models.TextField(null=True, blank=True)
     problem = models.CharField(max_length=500, null=True, blank=True)
     problemDescription = models.TextField(null=True, blank=True)
-    patientGroupId = models.ForeignKey(PatientGroup, on_delete=models.SET_NULL,null=True, blank=True)
     patientImage = models.ImageField(upload_to = user_directory_path_main('a', 'b'), default = 'patient-images/avtar.png', null=True, blank=True)
     createAt = models.DateTimeField(auto_now_add=True)
 
@@ -88,29 +70,16 @@ class AppointmentByUser(models.Model):
         return ",".join([str(p) for p in self.appointment.all()])
 
 
-class Drug(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
-    typeOfDrug = models.CharField(max_length=225, null=True, blank=True)
-    drug = models.CharField(max_length=225, null=True, blank=True)
-    stengh = models.CharField(max_length=225, null=True, blank=True)
-    instructions = models.CharField(max_length=225, null=True, blank=True)
-    def __str__(self):
-        return self.drug
-
 class Prescription(models.Model):
     id = models.UUIDField(primary_key = True,default = uuid.uuid4, editable = False)
     appointment = models.ForeignKey(Appointment, on_delete=models.SET_NULL, null=True, blank=True)
-    drug = models.ForeignKey(Drug, on_delete=models.SET_NULL, null=True, blank=True)
-    quantity = models.CharField(max_length=225, null=True, blank=True)
-    frequncy = jsonfield.JSONField()
-    duration = models.CharField(max_length=225, null=True, blank=True)
-    instructions = models.TextField(null=True, blank=True)
-    note = models.TextField(null=True, blank=True)
-    dose = models.TextField(null=True, blank=True)
-    doseTime = models.TextField(null=True, blank=True)
-    beforeDrug = models.TextField(null=True, blank=True)
+    prescriptionDetails = jsonfield.JSONField()
+    status = models.CharField(max_length=225, default='approve', null=True, blank=True)
+    createAt = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+
     def __str__(self):
-        return self.drug
+        return str(self.appointment)
+
 
 class PrescriptionByUser(models.Model):
     id = models.UUIDField(primary_key = True,default = uuid.uuid4, editable = False)

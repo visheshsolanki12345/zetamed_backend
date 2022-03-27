@@ -1,8 +1,9 @@
+from xml.parsers.expat import model
 from rest_framework import serializers
 
 from .models import (
     PatientDetails, PatientByUser,
-    PatientGroup, Appointment, AppointmentByUser
+    Appointment, AppointmentByUser
 )
 import time
 from datetime import datetime
@@ -18,24 +19,15 @@ class PatientDetailsSerializer(serializers.ModelSerializer):
         ]
 
 
-class PatientGroupSerializer(serializers.ModelSerializer):
-    createAt = serializers.DateTimeField(format="%B %d, %Y, %I:%M%p")
-    class Meta:
-        model = PatientGroup
-        fields = [
-            'id', 'disease', 'diseaseDiscription', 'createAt'
-        ]
-
-
 class PatientInfoSerializer(serializers.ModelSerializer):
     createAt = serializers.DateTimeField(format="%B %d, %Y, %I:%M%p")
-    age = serializers.DateField(format="%B %d, %Y")
+    # age = serializers.DateField(format="%B %d, %Y")
     class Meta:
         model = PatientDetails
         fields = [
             'id', 'age', 'name', 'gender', 'whichProof', 'proofId', 'mobileNo', 'email',
-            'city', 'state', 'country', 'zipcode', 'problem', 'problemDescription',
-            'patientImage', 'patientGroupId', 'createAt',
+            'address','problem', 'problemDescription',
+            'patientImage',  'createAt',
         ]
 
 
@@ -72,3 +64,4 @@ class AppointmentByUserSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'user', 'appointment'
         ]
+

@@ -25,7 +25,6 @@ INSTALLED_APPS = [
     'django_celery_results',
     'authentication',
     'patient',
-    'micro_api',
     'admin_work',
     'comman_functions',
     'task_scheduler',
